@@ -10,8 +10,6 @@ use tokio::sync::Mutex;
 //      port 5000
 const SERVER_ADDRESS: ([u8; 4], u16) = ([127, 0, 0, 1], 5000);
 
-type DataPoint = HashMap<String, String>;
-//type Db = Arc<Mutex<Vec<DataPoint>>>;
 type Db = Arc<Mutex<HashMap<String, Vec<String>>>>;
 
 fn init_db() -> Db {
@@ -20,7 +18,8 @@ fn init_db() -> Db {
 
 #[tokio::main]
 async fn main() {
-    // um HashMap para simular 
+    // um HashMap para simular uma base de dados
+    // it is necessary to use Arc smart pointers and Mutex for asynchronicity
     let db = init_db();
 
     let routes = get_routes(db);
@@ -49,15 +48,21 @@ fn put_data(
             .and(with_db(db.clone()))
             .and_then(handler_put_data_get))
     
-        // /put_data POST queries
+    // /put_data POST queries
         .or(warp::post()
             .and(warp::multipart::form())
-            .and(with_db(db.clone()))
+            .and(with_db(db))
             .and_then(handler_put_data_post))
-        
-        // .map(|_| format!("KAWABUNGA"))
-        //.and(warp::body::content_length_limit(1024 * 16).and(warp::body::json()))
-        //.and_then(|a: String| format!("Here's data mf: {}", a))
+}
+
+// TODO
+// /get_data
+fn get_data(
+    db: Db
+)
+-> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path("get_data")
+        .map(|| "shudup")
 }
 
 async fn handler_put_data_get(
@@ -76,60 +81,22 @@ async fn handler_put_data_get(
         }
     };
 
-    //println!("{:?}", db);
+    println!("put_data GET request: {:?}\n", values);
     Ok(result)
 }
 
+// TODO (don't know how)
 async fn handler_put_data_post(
     values: FormData,
     db: Db
 ) -> Result<impl warp::Reply, Infallible> {
+    //println!("put_data POST request: {}");
     Ok(format!("{:?}", values))
 }
 
+// adds the database as an argument when used with .and method in routes
 fn with_db(
     db: Db
 ) -> impl Filter<Extract = (Db,), Error = Infallible> + Clone {
     warp::any().map(move || db.clone())
 }
-
-
-
-// fn get_data_post() {
-
-// }
-
-// /put_data
-fn get_data(
-    db: Db
-)
--> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path("get_data")
-        .map(|| "shudup")
-}
-
-
-/*// Constants
-const SERVER_ADDRESS: &str = "127.0.0.1:1234";
-
-fn main() {
-    println!("Hello, world!");
-
-    let listener = TcpListener::bind(SERVER_ADDRESS).unwrap();
-
-    println!("Server listening!");
-
-    for stream in listener.incoming() {
-        let stream = stream.unwrap();
-        println!("Connection established with");
-        
-        handle_connection(stream);
-    }
-}
-
-fn handle_connection(mut stream: TcpStream) {
-    let mut buffer = [0;1024];
-    let len = stream.read(&mut buffer).unwrap();
-    let message = String::from_utf8_lossy(&buffer[0..len]);
-    print!("Received: {}", message);
-}*/
