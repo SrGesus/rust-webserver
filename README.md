@@ -1,4 +1,4 @@
-# Webserver
+# Webserver / Docker
 
 This is a webserver built in rust using the [tokio](https://docs.rs/tokio/latest/tokio/) and the [warp](https://docs.rs/warp/latest/warp/) crates.
 Tokio is an asynchronous runtime required to fullfill our multi-threaded necessities.
@@ -7,7 +7,7 @@ These are both pretty fast tools and so should the webserver, provided my code d
 
 ---
 
-## To do
+## To do - Webserver
 
 * [x] Handle multiple requests simultaneously
 * [x] Receive http requests with the following variables Latitude, Longitude, Speed, Time
@@ -18,3 +18,9 @@ These are both pretty fast tools and so should the webserver, provided my code d
 * [x] Provide an api that returns all the data already received - get_data GET requests
 * [ ] API description
 * [ ] **Bonus**: add persistence
+
+## To do - Docker
+
+ * [x] Create dockerfile for webserver
+ * [ ] Create docker compose for application
+ * [ ] Have persistence with docker volumes

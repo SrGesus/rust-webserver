@@ -71,7 +71,7 @@ pub async fn put_data_formdata(
             let len = reader.read(&mut dst).unwrap();
             let data = String::from_utf8_lossy(&dst[0..len]).into_owned();
 
-            println!("{} = {}", name, data);
+            //println!("{} = {}", name, data);
             hash_map.insert(name, data);
         } else {
             println!("form-data collection failed for {}", part.name());
