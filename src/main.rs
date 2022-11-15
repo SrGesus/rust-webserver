@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::convert::Infallible;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use serde_json;
 
 // Constants
 //      localhost (127.0.0.1)
@@ -62,7 +63,18 @@ fn get_data(
 )
 -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path("get_data")
-        .map(|| "shudup")
+        .and(with_db(db))
+        .and_then(handler_get_data)
+}
+async fn handler_get_data(
+    db: Db
+) -> Result<impl warp::Reply, Infallible> {
+    let db = db.lock().await;
+    
+    let json_table = serde_json::to_string_pretty(&db.clone()).unwrap();
+
+    println!("get_data GET request: {}\n", json_table);
+    Ok(json_table)
 }
 
 async fn handler_put_data_get(
@@ -90,9 +102,11 @@ async fn handler_put_data_post(
     values: FormData,
     db: Db
 ) -> Result<impl warp::Reply, Infallible> {
+    
     //println!("put_data POST request: {}");
     Ok(format!("{:?}", values))
 }
+
 
 // adds the database as an argument when used with .and method in routes
 fn with_db(
