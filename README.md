@@ -10,11 +10,11 @@ These are both pretty fast tools and so should the webserver, provided my code d
 ## To do
 
 * [x] Handle multiple requests simultaneously
-* [ ] Receive http requests with the following variables Latitude, Longitude, Speed, Time
+* [x] Receive http requests with the following variables Latitude, Longitude, Speed, Time
     * [x] Handle put_data GET requests (string queries)
-    * [ ] Handle put_data POST requests (multipart data)
-        * [x] Handle the curl's POST requests
-        * [ ] Handle the script's POST requests
+    * [x] Handle put_data POST requests 
+        * [x] Handle curl's POST requests (multipart/form-data)
+        * [x] Handle script's POST requests (application/x-www-form-urlencoded)
 * [x] Provide an api that returns all the data already received - get_data GET requests
 * [ ] API description
 * [ ] **Bonus**: add persistence
