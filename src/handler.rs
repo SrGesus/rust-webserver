@@ -15,10 +15,10 @@ pub async fn get_data(
 ) -> Result<impl warp::Reply, Infallible> {
     let db = db.lock().await;
     
-    let json_table = serde_json::to_string_pretty(&db.clone()).unwrap();
+    let json = serde_json::to_string_pretty(&db.clone()).unwrap();
 
-    println!("get_data GET request received sucessfully");
-    Ok(json_table)
+    println!("/get_data GET request received sucessfully");
+    Ok(json)
 }
 
 // Receives an HashMap and pushes it into the Db
@@ -27,11 +27,9 @@ pub async fn put_data_hash (
     db: Db
 ) -> Result<impl warp::Reply, warp::Rejection> {
 
-    let mut result = String::from("");
     let mut db = db.lock().await;
 
     for (key, value) in values.iter() {
-        result.push_str(&format!("{} = {}\n", key, value));
         if let Some(vec) = db.get_mut(key) {
             vec.push(value.to_owned());
         } else {
@@ -39,9 +37,9 @@ pub async fn put_data_hash (
         }
     };
 
-    println!("put_data POST request received sucessfully");
+    println!("/put_data POST request received sucessfully");
 
-    Ok(result)
+    Ok(serde_json::to_string_pretty(&values).unwrap())
 }
 
 // Extracts a HashMap from multipart/form-data and pushes it into the db
