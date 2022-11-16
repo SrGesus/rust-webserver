@@ -3,7 +3,7 @@
 This is a containerized webserver built in rust using the [tokio](https://docs.rs/tokio/latest/tokio/) and the [warp](https://docs.rs/warp/latest/warp/) crates.
 Tokio is an asynchronous runtime required to fullfill our multi-threaded necessities.
 Warp is a simple webserver framework that allows us to build the API.
-These are both pretty fast tools and so should the webserver
+These are both pretty fast tools and so should the webserver.
 
 The Webserver can simply be initialized with the command:
 ```bash

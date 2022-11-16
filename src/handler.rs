@@ -1,14 +1,20 @@
 use warp::multipart::{FormData, Part};
 use futures::TryStreamExt;
-
 use warp::Buf;
+
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::io::Read;
 use serde_json;
 
+use influxdb::{Client, Query, Timestamp, ReadQuery};
+use influxdb::InfluxDbWriteable;
+use chrono::{NaiveTime, NaiveDateTime, Utc, DateTime};
+
 use crate::db::Db;
 use crate::cfg::BUFFER_SIZE;
+
+
 
 pub async fn get_data(
     db: Db
@@ -23,10 +29,29 @@ pub async fn get_data(
 
 // Receives an HashMap and pushes it into the Db
 pub async fn put_data_hash (
-    values: HashMap<String, String>,
+    mut values: HashMap<String, String>,
     db: Db
 ) -> Result<impl warp::Reply, warp::Rejection> {
+    
+    if let Some(time) = values.get_mut("Time") {
 
+        // If time is not rfc3339 formatted try HH:MM:SS and add today's date and UTC TimeZone
+        if let Err(_) = DateTime::parse_from_rfc3339(time) {
+            if let Ok(time) = NaiveTime::parse_from_str(time, "%H:%M:%S%.f") {
+                let date = Utc::now().date_naive();
+                let datetime = NaiveDateTime::new(date, time);
+                values.insert(String::from("Time"), DateTime::<Utc>::from_utc(datetime, Utc).to_string());      
+            } else {
+                return Ok(format!("Unsuported format for Time: {}\nPlease use rfc3339 or HH:MM:SS", time));
+            }
+        } 
+
+    // If there's no time parameter add it
+    } else {
+        values.insert(String::from("Time"), Utc::now().to_rfc3339());
+    }
+
+    // Await for database lock
     let mut db = db.lock().await;
 
     for (key, value) in values.iter() {
@@ -39,6 +64,7 @@ pub async fn put_data_hash (
 
     println!("/put_data POST request received sucessfully");
 
+    // Shouldn't be able to panic because it receives a Hashmap<String, String>
     Ok(serde_json::to_string_pretty(&values).unwrap())
 }
 
@@ -47,6 +73,9 @@ pub async fn put_data_formdata(
     values: FormData,
     db: Db
 ) -> Result<impl warp::Reply, warp::Rejection> {
+
+    // Register time before awaiting
+    let utc_time = Utc::now();
 
     println!("Processing multipart/form-data request");
 
@@ -75,6 +104,11 @@ pub async fn put_data_formdata(
             println!("form-data collection failed for {}", part.name());
         }
         
+    }
+
+    // If there's no Time parameter add it to the HashMap
+    if let None = hash_map.get("Time") {
+        hash_map.insert(String::from("Time"), utc_time.to_rfc3339());
     }
 
     // Push into the Db and get the added data
