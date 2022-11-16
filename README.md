@@ -3,13 +3,13 @@
 This is a containerized webserver built in rust using the [tokio](https://docs.rs/tokio/latest/tokio/) and the [warp](https://docs.rs/warp/latest/warp/) crates.
 Tokio is an asynchronous runtime required to fullfill our multi-threaded necessities.
 Warp is a simple webserver framework that allows us to build the API.
-These are both pretty fast tools and so should the webserver, provided my code does not serve as a bottleneck.
+These are both pretty fast tools and so should the webserver
 
 The Webserver can simply be initialized with the command:
 ```bash
 cargo run
 ```
-or via its [container images](#running-images).
+Alternative, one can use its [container images](#running-images).
 
 # API
 The API handles:
@@ -20,9 +20,9 @@ The API handles:
 
 ## /put_data
 The API is pretty simple, the put_data requests take in any amount of parameters and store them and their values as rust Strings.
-The curl POST requests have a limit of 1KiB per value of each parameter (1024 characters), the curl GET requests and the [webserver_tester](https://gitlab.com/psem/recruitment-software/recruitment-tasks/-/blob/main/resources/webserver_tester.py)'s requests have a greater limit.
+The multipart form POST requests have a limit of 1KiB per value of each parameter (1024 characters), the GET requests and the [webserver_tester](https://gitlab.com/psem/recruitment-software/recruitment-tasks/-/blob/main/resources/webserver_tester.py)'s POST urlencoded form requests have a greater limit.
 
-In the future Time will be a mandatory parameter.
+In the future Time will be a mandatory parameter because it will be needed for InfluxDB.
 
 The API returns the registered parameters and values in a random order in a json format:
 ```json
@@ -33,7 +33,7 @@ The API returns the registered parameters and values in a random order in a json
   "Latitude": "387365578"
 }
 ```
-### /put_data GET requests
+### /put_data GET requests (curl)
 These are simple string queries structured in the following way:  
 http://localhost:5000/put_data?Parameter=value
 
@@ -45,7 +45,12 @@ curl "http://localhost:5000/put_data?Latitude=387365578&Longitude=-91389050&Time
 ### /put_data POST requests (curl)
 The following sends a POST request with the multipart/form-data format:
 ```bash
-curl -X POST -F 'Latitude=387365578' -F 'Longitude=-91389050' -F 'Time=12:35:13' -F 'Speed=57' http://localhost:5000/put_data
+curl -X POST \
+    -F 'Latitude=387365578' \
+    -F 'Longitude=-91389050' \
+    -F 'Time=12:35:13' \
+    -F 'Speed=57' \
+    http://localhost:5000/put_data
 ```
 
 ### /put_data POST requests (the script)
@@ -86,14 +91,28 @@ This path receives GET requests and sends back the stored data formatted as json
 }
 ```
 
+# Data Storage
+
+Currently the data is stored in a simple thread-safe HashMap, with the parameters as keys and String Vectors as values.
+
+There's no data persistence.
+
+To permit thread safety [Arc pointers](https://doc.rust-lang.org/std/sync/struct.Arc.html) are used for shared ownership and [Mutex](https://doc.rust-lang.org/std/sync/struct.Mutex.html) will allow mutability by introducing blocking when more than one thread tries to access the HashMap.
+
+Thus we end up with the type:
+```rust
+Arc<Mutex<HashMap<String, Vec<String>>>>
+```
+
 # Docker
 
-There are two dockerfiles for the alpine and debian images of rust, the alpine image for the server is 20% the size of debian's but it relies on rust-musl-builder instead of rust's official image which might mean some functionality does not work (issues with OpenSSL seem to be common) but there seems to be no issue for the things we need.
+There are two dockerfiles for the alpine and debian images of rust, the [alpine image](https://gitlab.com/psem/recruitment-software/srgesus/rust-webserver/container_registry/3631860) for the server is 20% the size of debian's but it relies on [rust-musl-builder](https://hub.docker.com/r/ekidd/rust-musl-builder/) instead of [rust](https://hub.docker.com/_/rust/)'s official image which might mean some functionality does not work (issues with OpenSSL seem to be common) but there seems to be no issue for the things we need.
 
-##<a name="running-images"></a> Running the images
+## Running the images
+<a name="running-images"></a>
 
-The alpine image has been pushed into the container registry so it can be run in few steps.
-1.  Make sure that you are logged into the registry in docker, you can do so with:
+The alpine image has been pushed into this project's [container registry](https://gitlab.com/psem/recruitment-software/srgesus/rust-webserver/container_registry) so it can be run in few steps.
+1.  Make sure that you are logged into the registry in docker, you can do so using your password or a PAT with read-registry permissions:
 ```bash
 docker login registry.gitlab.com
 ```
